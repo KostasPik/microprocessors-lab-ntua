@@ -1,0 +1,124 @@
+\documentclass[a4paper]{article}
+\usepackage[margin=2cm]{geometry}
+
+\usepackage{xgreek}
+\usepackage{xltxtra}
+\usepackage{unicode-math}
+\usepackage{graphicx}
+\usepackage{float}
+%\usepackage{tocbibind}
+\usepackage[pdfusetitle]{hyperref}
+\graphicspath{{./images/}}
+\setmainfont[Mapping=tex-text]{CMU Serif}
+\setsansfont[Mapping=tex-text]{CMU Sans Serif}
+\setmonofont{CMU Typewriter Text}
+\usepackage{minted}
+
+\usepackage{tocloft}
+\cftsetindents{section}{0em}{3em}
+
+\title{7η Εργαστηριακή Άσκηση\\Εργαστήριο Μικροϋπολογιστών}
+\author{Ανδρέας Στάμος (03120018), Κωνσταντίνος Πίκουλας (03120112)}
+\date{Δεκέμβριος 2023}
+
+\hypersetup{
+	colorlinks=true,
+	linkcolor=blue,
+}
+
+\begin{document}
+
+
+\maketitle
+\tableofcontents
+
+\section{Ζήτημα 1 -- Ανάπτυξη συναρτήσεων επικοινωνίας 1-Wire με το θερμόμετρο}
+
+\par Αρχικά εκτελούμε \texttt{one\_wire\_reset} προκειμένου να θέσουμε το θερμόμετρο σε κατάσταση λειτουργίας.
+Έπειτα στέλνουμε εντολή (\texttt{0xCC})πως απευθυνόμαστε στην μοναδική συνδεδεμένη συσκεύη (παρακάμπτωντας την αποστολή διεύθυνσης έτσι),
+και έπειτα στέλνουμε εντολή θερμομέτρησης (\texttt{0x44}). Μέχρι να ολοκληρωθεί η θερμομέτρηση, το θερμόμετρο μας στέλνει 0, αν ζητήσουμε να
+στείλει ένα bit (με την \texttt{one\_wire\_receive\_bit}). Μόλις μας στείλει 1, η θερμομέτρηση έχει ολοκληρωθεί.
+\par Έπειτα θέτουμε ξανά την συσκεύη σε κατάσταση λειτουργίας εκ νέου με \texttt{one\_wire\_reset}, την επιλέγουμε στέλνοντας \texttt{0xCC}, και στέλνουμε
+εντολή ανάγνωσης της μνήμης της θερμομέτρου (\texttt{0xBE}). Τέλος, διαβάζουμε 2 bytes (με \texttt{one\_wire\_receive\_byte}), πρώτα το LSB και έπειτα
+το MSB (little-endian) και τα ενώνουμε σε μία προσημασμένη 16bit μεταβλητή (int16\_t).
+
+\par Ο κώδικας έχει διαχωριστεί σε χωριστά αρχεία, με σκοπό να είναι modular.
+
+\par Ο κώδικας για την επικοινωνία με το θερμόμετρο βρίσκεται στο αρχείο \texttt{thermometer.c} που υπάρχει στο παράρτημα \ref{onewire_c},
+με την αντίστοιχη C επικεφαλίδα να βρίσκεται στο παράρτημα \ref{thermometer_h}.
+
+\par Ο κώδικας για την One Wire επικοινωνία -- χρησιμοποιείται από το \texttt{thermometer.c}
+βρίσκεται στο αρχείο \texttt{onewire.c} που υπάρχει στο παράρτημα \ref{onewire_c},
+με την αντίστοιχη C επικεφαλίδα να βρίσκεται στο παράρτημα \ref{onewire_h}.
+
+\section{Ζήτημα 2 -- Απεικόνιση θερμοκρασίας στην LCD οθόνη}
+
+\par Ο κώδικας για την επικοινωνία με την LCD οθόνη συντάχθηκε σε προηγούμενη εργασία και παρατίθεται εδώ ξανά. Πιο συγκεκριμένα:
+\begin{itemize}
+	\item \texttt{lcd.c} στο παράρτημα \ref{lcd_c} και \texttt{lcd.h} στο παράρτημα \ref{lcd_h} -- για την επικοινωνία με την οθόνη.
+	Πρέπει κατά την μεταγλώττιση του \texttt{lcd.c} να γίνει \texttt{define} η macro \texttt{LCD\_PORTD} ή \texttt{LCD\_PCA9555} ανάλογα
+	το πώς επιθυμούμε να γίνεται η επικοινωνία. Εδώ επιθυμούμε μέσω PCA9555 διότι το PD4 χρησιμοποιείται για την 1-wire επικοινωνία με το θερμόμετρο.
+	\item \texttt{twi\_pca9555.c} στο παράρτημα \ref{twi_pca9555_c} και \texttt{twi\_pca9555.h} στο παράρτημα \ref{twi_pca9555_h}
+	για την επικοινωνία TWI και επιπρόσθετα για την επικοινωνία μέσω TWI με το ολοκληρωμένο PCA9555.
+\end{itemize}
+
+\par Αρχικά διαβάζουμε την θερμοκρασία από το θερμόμετρο με την συνάρτηση που αναπτύχθηκε στο Ζήτημα 1. Αν δεν ανιχνευθεί συσκευή, εκτυπώνουμε \texttt{NO Device}
+στην οθόνη. Διαφορετικά εκτυπώνουμε την θερμοκρασία με 3 δεκαδικά ψηφία. Αρχικά μετατρέπουμε τον fixed-point αριθμό που μας δίνει το θερμόμετρο (4 bits κλασματικό
+μέρος και 8 bits ακέραιο), σε αριθμό κινητής υποδιαστολής τύπου \texttt{float} και στην συνέχεια με χρήση της συνάρτησης \texttt{snprintf} μετατρέπουμε τον αριθμό
+αυτό σε συμβολοσειρά. Τέλος εκτυπώνουμε την συμβολοσειρά στην οθόνη. Δόθηκε έμφαση στην σωστή ερμηνείας των αρνητικών αριθμών (δίνονται από το θερμόμετρο ως
+συμπλήρωμα ως προς 2). Τέλος, προκειμένου η οθόνη να μην κάνει ``blink'', ανανενώνουμε το μήνυμα στην οθόνη μόνο αν η ανάγνωση θερμοκρασίας επιστρέψει καινούρια
+τιμή σε σχέση με την προηγούμενη φορά που εκτυπώθηκε θερμοκρασία στην οθόνη. Αξίζει, επίσης να επισημανθεί, πως για να λειτουργήσει η snprintf με float,
+πρέπει να γίνει link με την σωστή snprintf (η default δεν περιέχει λειτουργικότητα αριθμών κινητής υποδιαστολής για οικονομία χώρου), και αυτό φαίνεται παρακάτω
+στο \texttt{Makefile}.
+
+\par Ο κώδικας του ζητήματος είναι ο εξής:
+\inputminted[breaklines, linenos]{c}{../Lab7.2/main.c}
+
+\pagebreak
+
+\par Τέλος, επειδή η μεταγλώττιση και η εγκατάσταση στην πλακέτα γίνεται χωρίς το MPLAB X, αλλά με μεταγλώττιση με AVR-GCC και εγκατάσταση με avrdude στην
+μνήμη προγράμματος παρατίθεται το σχετικό \texttt{Makefile}:
+\par Ο φάκελος \texttt{pack} που αναφέρεται είναι οι σχετικές βιβλιοθήκες με τις αντίστοιχες επικεφαλίδες
+για τον ATmega328PB, καθώς δεν υποστηρίζεται από default από τον avr-gcc. Αρκεί κανείς να κατεβάσει από την σχετική ιστοσελίδα της Microchip
+\url{https://packs.download.microchip.com/} το σχετικό pack για την ATmega Series και να το αποσυμπιέσει μέσα στον φάκελο \texttt{pack}.
+
+\inputminted[breaklines, linenos]{basemake}{../Lab7.2/Makefile}
+
+\pagebreak
+
+\appendix
+
+\section{Αρχείο thermometer.h}
+\label{thermometer_h}
+\inputminted[breaklines, linenos]{c}{../common/thermometer.h}
+
+\section{Αρχείο thermometer.c}
+\label{thermometer_c}
+\inputminted[breaklines, linenos]{c}{../common/thermometer.c}
+
+\section{Αρχείο onewire.h}
+\label{onewire_h}
+\inputminted[breaklines, linenos]{c}{../common/onewire.h}
+
+\section{Αρχείο onewire.c}
+\label{onewire_c}
+\inputminted[breaklines, linenos]{c}{../common/onewire.c}
+
+\section{Αρχείο lcd.h}
+\label{lcd_h}
+\inputminted[breaklines, linenos]{c}{../common/lcd.h}
+
+\section{Αρχείο lcd.c}
+\label{lcd_c}
+\inputminted[breaklines, linenos]{c}{../common/lcd.c}
+
+\section{Αρχείο twi\_pca9555.h}
+\label{twi_pca9555_h}
+\inputminted[breaklines, linenos]{c}{../common/twi_pca9555.h}
+
+\section{Αρχείο twi\_pca9555.c}
+\label{twi_pca9555_c}
+\inputminted[breaklines, linenos]{c}{../common/twi_pca9555.c}
+
+\end{document}
+

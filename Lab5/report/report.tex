@@ -1,0 +1,85 @@
+\documentclass[a4paper]{article}
+\usepackage[margin=2cm]{geometry}
+
+\usepackage{xgreek}
+\usepackage{xltxtra}
+\usepackage{unicode-math}
+\usepackage{graphicx}
+\usepackage{float}
+%\usepackage{tocbibind}
+\usepackage[pdfusetitle]{hyperref}
+\graphicspath{{./images/}}
+\setmainfont[Mapping=tex-text]{CMU Serif}
+\setsansfont[Mapping=tex-text]{CMU Sans Serif}
+\setmonofont{CMU Typewriter Text}
+\usepackage{minted}
+
+\title{5η Εργαστηριακή Άσκηση\\Εργαστήριο Μικροϋπολογιστών}
+\author{Ανδρέας Στάμος (03120018), Κωνσταντίνος Πίκουλας (03120112)}
+\date{Νοέμβριος 2023}
+
+\hypersetup{
+	colorlinks=true,
+	linkcolor=blue,
+}
+
+\begin{document}
+
+
+\maketitle
+\tableofcontents
+
+\section{Ζήτημα 5.1}
+
+\par Το \texttt{IO\_PORT 0} ρυθμίζεται ως έξοδος. Μέσα σε έναν βρόχο, διαβάζουμε τα $A$, $B$, $C$, $D$ από το \texttt{PIND},
+υπολογίζουμε την ζητούμενη λογική συνάρτηση και στέλνουμε το αποτέλεσμα στο PCA9555 στο \texttt{IO\_PORT 0}.
+
+\par Οι κοινές συναρτήσεις για το TWI και την επικοινωνία με το PCA9555 βρίσκονται στο Παράρτημα \ref{twi_pca9555}.
+
+\par Ο κώδικας C είναι ο παρακάτω:
+\inputminted[breaklines, linenos]{c}{../Lab5.1/main.c}
+
+\section{Ζήτημα 5.2}
+
+\par Χρησιμοποιούμε την γραμμή \texttt{IO1\_0} ως γείωση (γράφοντας \texttt{0}) σε αυτή. Έτσι όταν ο χρήστης πατήσει κάποιο κουμπί,
+η αντίστοιχο γραμμή εισόδου γειώνεται, όπως την διαβάζουμε ως \texttt{0}. Επειδή τα bits, τα δείχνουμε με την ίδια σειρά στο LEDs,
+μπορούμε απλά να κάνουμε shift 4 θέσεις δεξιά αυτό που διαβάσαμε. Επίσης απαιτείται να υπολογίσουμε την λογική άρνηση αυτού που διαβάσαμε,
+ώστε να μεταβούμε από την αρνητική λογική των κουμπιών όταν τα διαβάζουμε, στην θετική λογική των LEDs.
+
+\par Οι κοινές συναρτήσεις για το TWI και την επικοινωνία με το PCA9555 βρίσκονται στο Παράρτημα \ref{twi_pca9555}.
+
+\par Ο κώδικας C είναι ο παρακάτω:
+\inputminted[breaklines, linenos]{c}{../Lab5.2/main.c}
+
+\section{Ζήτημα 5.3}
+\par Χρησιμοποιήσαμε τους κώδικες της 4ης εργαστηριακής σειράς, αλλάζοντας την εγγραφή στο PORTD σε εγγραφή στο \texttt{IO PORT 1}.
+Προκειμένου να γλιτώσουμε την ανάγνωση που συνέβαινε για να διατηρούμε πάνω στο PORTD αν πρόκειται για command ή data, περνάμε το
+αν πρόκειται για command ή data ως όρισμα στις αντίστοιχες συναρτήσεις.
+
+\par Επίσης, προκειμένου να κάνουμε τις αλλαγές γραμμής, χρησιμοποιήσαμε την εντολή του μικροελεγκτή ST7066U της LCD οθόνης:
+\texttt{Set DDRAM Address}. Για την 1η γραμμή, θέτουμε την διεύθυνση DDRAM σε 0x00 και για την 2η γραμμή θέτουμε την διεύθυνση
+DDRAM σε 0x40 (σύμφωνα με το datasheet).
+
+
+\par Οι συναρτήσεις για την επικοινωνία με την LCD οθόνη μέσω του PCA9555 βρίσκονται στο Παράρτημα \ref{lcd}.
+\par Οι κοινές συναρτήσεις για το TWI και την επικοινωνία με το PCA9555 βρίσκονται στο Παράρτημα \ref{twi_pca9555}.
+
+\par Ο κώδικας C είναι ο παρακάτω:
+\inputminted[breaklines, linenos]{c}{../Lab5.3/main.c}
+
+\appendix
+
+\section{Κοινές συναρτήσεις για το TWI και την επικοινωνία με το PCA9555}
+\label{twi_pca9555}
+
+Το αρχείο \texttt{twi\_pca9555\_.c} που χρησιμοποιείται στους παραπάνω κώδικες, για το TWI και την επικοινωνία με το PCA9555 είναι το εξής:
+\inputminted[breaklines, linenos]{c}{../common/twi_pca9555.c}
+
+\section{Κοινές συναρτήσεις για την επικοινωνία με την LCD οθόνη μέσω PCA9555}
+\label{lcd}
+
+Το αρχείο \texttt{lcd.c} που χρησιμοποιείται στους παραπάνω κώδικες, για την επικοινωνία με την LCD οθόνη μέσω του PCA9555, είναι το εξής:
+\inputminted[breaklines, linenos]{c}{../common/lcd.c}
+
+\end{document}
+
